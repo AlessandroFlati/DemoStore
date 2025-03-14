@@ -46,3 +46,38 @@ At the end of this step, you should have a project structure similar to the firs
     - `DemoStoreApplication.java` - Main class
 - `src/main/resources` - Resources such as static files and configuration files
   - `application.properties` - Application properties
+
+#### Creating the Package Structure
+
+- `com.demo.store.controller` - Controllers
+- `com.demo.store.model` - Models
+- `com.demo.store.repository` - Repositories
+- `com.demo.store.service` - Services
+
+This organization is a common practice in Spring projects, but it is not mandatory. You can organize your project as you see fit.
+
+That said, it's important to keep the project organized and easy to understand - and this is a common practice to help you logically separate functionalities and make the project more maintainable as new features are added.
+
+#### Refactoring the Main Application Class
+
+Ensure that your main application class (e.g., `DemoStoreApplication.java`) is placed in a root package (like com.demostore) so that component scanning picks up all the sub-packages automatically.
+```
+src/main/java/
+└── demo
+    └── store
+        ├── StoreApplication.java
+        ├── controller
+        ├── model
+        ├── repository
+        └── service
+```
+
+#### Implementing a basic Service and Controller
+
+- Create a simple service class in the service package. This service should have a method that returns a greeting message.
+- Create a controller class in the controller package. This controller should have a method that calls the service method and returns the greeting message.
+
+#### Running the Application
+
+- Run the main application class (`DemoStoreApplication.java`) as a Java application.
+- Access the URL `http://localhost:8080/api/hello` in your browser.
