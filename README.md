@@ -99,3 +99,25 @@ For example, instead of a controller instantiating its own service, the service 
 
 The Spring container automatically detects classes annotated with stereotypes (such as `@Component`, `@Service`, `@Repository`, or `@Controller`) and registers them as **beans**. When the container instantiates a bean, it looks for dependencies annotated with `@Autowired` and injects the appropriate beans based on the type or qualifier. This automated process significantly reduces boilerplate code and improves maintainability.
 
+#### Configuring Beans and Understanding Bean Scopes
+
+In Spring, beans are objects managed by the IoC container. You can define beans in several ways:
+- **XML Configuration**: Traditionally, beans were declared in XML files. Although less common today, this method remains useful for legacy projects.
+- **Java Configuration**: Beans can be defined using Java classes annotated with `@Configuration`. Use `@Bean` annotated methods to create and return bean instances.
+- **Annotation-based Configuration**: Beans can be defined using annotations like `@Component`, `@Service`, `@Repository`, and `@Controller` directly on classes.
+
+There are several Bean Scopes available in Spring:
+- **Singleton**: The default scope in Spring. Only one instance of the bean is created per Spring IoC container. 
+  - Use case: Services and repositories that maintain shared state or require resource efficiency.
+- **Prototype**: A new instance is created each time the bean is requested. 
+  - Use case: Stateful beans that should not be shared.
+- **Web-aware scopes**:
+  - **Request**: A new instance is created for each HTTP request.
+    - Use case: Controllers that require request-specific instances.
+  - **Session**: A new instance is created for each HTTP session.
+    - Use case: Beans that need to be session-specific.
+  - **Application**: A single instance is created for the entire web application.
+    - Use case: Beans that should be shared across the application.
+  - **WebSocket**: A new instance is created for each WebSocket connection.
+    - Use case: Beans that require WebSocket-specific instances.
+
