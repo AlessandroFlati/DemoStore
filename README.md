@@ -81,3 +81,21 @@ src/main/java/
 
 - Run the main application class (`DemoStoreApplication.java`) as a Java application.
 - Access the URL `http://localhost:8080/api/hello` in your browser.
+
+### Spring Fundamentals
+
+#### Inversion of Control (IoC) and Dependency Injection (DI)
+
+IoC is a design principle in which the control flow of an application is inverted compared to traditional procedural programming. Rather than your code controlling the creation and lifecycle of objects, the Spring container takes charge, instantiating and managing beans as needed. This shift simplifies the management of dependencies and promotes a cleaner separation of concerns.
+
+DI is a technique where objects receive their dependencies from an external source rather than creating them internally. In Spring, DI can be implemented via:
+- **Constructor Injection**: Dependencies are provided through a class constructor.
+- **Setter Injection**: Dependencies are assigned through setter methods.
+- **Field Injection**: Dependencies are directly assigned to fields (less preferred in modern practices due to testing difficulties).
+
+For example, instead of a controller instantiating its own service, the service is injected by the framework, thus making the code more modular and testable.
+
+#### Spring Container and Component Scanning
+
+The Spring container automatically detects classes annotated with stereotypes (such as `@Component`, `@Service`, `@Repository`, or `@Controller`) and registers them as **beans**. When the container instantiates a bean, it looks for dependencies annotated with `@Autowired` and injects the appropriate beans based on the type or qualifier. This automated process significantly reduces boilerplate code and improves maintainability.
+
