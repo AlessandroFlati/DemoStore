@@ -8,7 +8,7 @@ public class Product {
     @Id
     @GeneratedValue
     private Long id;
-    @Column(unique=true)
+    @Column(unique = true)
     private String name;
     private String description;
     private Double price;

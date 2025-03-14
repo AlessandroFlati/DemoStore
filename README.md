@@ -298,3 +298,32 @@ You can specify the loading strategy using the `fetch` attribute in the relation
 @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 private List<Product> products = new ArrayList<>();
 ```
+
+### API Rest with Spring MVC
+
+#### Defining a REST Controller
+
+- Mark the class with `@RestController` to indicate that it serves JSON (or other media) rather than rendering views.
+- Use `@RequestMapping` at the class level to define a common path (e.g., `/api/products`).
+- For each endpoint, use the appropriate annotation based on the HTTP method:
+  - `@GetMapping` for read operations
+  - `@PostMapping` for create
+  - `@PutMapping` or `@PatchMapping` for update
+  - `@DeleteMapping` for delete
+
+Typically, you’ll inject a service (e.g., `ProductService`) that encapsulates business logic and interacts with the repository layer.
+
+#### Request and Response Bodies
+
+- In case of Path Variables, use `@PathVariable` to extract values from the URI (e.g., `/api/products/{id}`).
+- For Query Parameters, use `@RequestParam` to extract values from the query string (e.g., `/api/products?category=electronics`). You can specify default values and required parameters.
+- Use `@RequestBody` to bind the request body to a method parameter. This is useful for POST and PUT requests where the client sends data in the request body. Spring automatically converts JSON to Java objects using Jackson.
+- If needed, use `ResponseEntity` to customize the response status, headers, and body. This allows you to return different HTTP status codes and headers based on the outcome of the operation.
+- For complex responses, consider using DTOs (Data Transfer Objects) to represent the data sent to and from the client. This helps decouple the internal domain model from the external API.
+
+#### Exception Handling
+
+- You can simply throw custom exceptions or use Spring's built-in exceptions (e.g., `ResponseEntityException`) to handle errors and return appropriate HTTP status codes.
+- Use `@ControllerAdvice` to define global exception handling for all controllers. This allows you to centralize exception handling logic and avoid duplicating code. More on this later
+
+
