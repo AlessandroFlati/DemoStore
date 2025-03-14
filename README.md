@@ -243,3 +243,58 @@ The `spring.jpa.hibernate.ddl-auto` property is used to define how Hibernate han
 #### Creating JPA Entities
 
 To create JPA entities, you need to define classes annotated with `@Entity`. These classes represent database tables, and their fields map to table columns. You can also define relationships between entities using annotations like `@OneToOne`, `@OneToMany`, `@ManyToOne`, and `@ManyToMany`.
+
+#### Relationships between Entities
+
+JPA supports various types of relationships between entities:
+- **One-to-One**: A `@OneToOne` mapping links two entities, each containing a single reference to the other. For example, a User entity might have a `@OneToOne` relationship with a `UserProfile` entity.
+  ```java
+  @OneToOne
+  @JoinColumn(name = "profile_id")  // The foreign key column
+  private UserProfile profile;
+  ```
+- **One-to-Many and Many-to-One**: In a one-to-many relationship, one entity is the parent, and it has multiple children. For instance, `Category` (parent) and `Product` (child). A product belongs to exactly one category, but a category can contain many products.
+  ```java
+  @Entity
+  public class Category {
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    private List<Product> products = new ArrayList<>();
+  }
+  
+  @Entity
+  public class Product {
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+  }
+  ```
+  `mappedBy = "category"` indicates that `Product` owns the relationship to `Category` (because it contains the `category_id` foreign key column).
+- **Many-to-Many**: In a many-to-many scenario, both entities can have multiple references to each other. For instance, a `Product` can be linked to many `Tag` entities, and each `Tag` can apply to many products.
+  ```java
+  @ManyToMany
+  @JoinTable(
+    name = "product_tag",
+    joinColumns = @JoinColumn(name = "product_id"),
+    inverseJoinColumns = @JoinColumn(name = "tag_id")
+  )
+  private Set<Tag> tags = new HashSet<>();
+  ```
+  The `@JoinTable` annotation specifies the join table name and the foreign key columns for each entity.
+
+#### Cascade and Orphan Removal
+
+The `cascade` attribute in JPA relationships defines how operations like persist, merge, remove, and refresh should propagate from parent entities to child entities. For example, if you set `cascade = CascadeType.ALL`, operations on the parent entity will cascade to the child entity.
+
+The `orphanRemoval` attribute is used to specify whether child entities should be removed when they are no longer referenced by the parent entity. Setting `orphanRemoval = true` ensures that orphaned child entities are deleted from the database.
+
+#### Lazy vs Eager Loading
+
+JPA supports two types of loading strategies for relationships: lazy loading and eager loading.
+- **Lazy Loading** (`FetchType.LAZY`): By default, JPA uses lazy loading for relationships. This means that related entities are loaded only when accessed. Lazy loading can help improve performance by fetching data on demand.
+- **Eager Loading** (`FetchType.EAGER`): In contrast, eager loading fetches related entities immediately when the parent entity is loaded. While this can reduce the number of queries, it may lead to performance issues if the fetched data is not always needed.
+
+You can specify the loading strategy using the `fetch` attribute in the relationship annotations. For example:
+```java
+@OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+private List<Product> products = new ArrayList<>();
+```
