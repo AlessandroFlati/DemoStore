@@ -491,3 +491,26 @@ Although basic CRUD operations are handled by Spring Data, you might need to ann
 The `@Transactional` annotation ensures that the annotated method runs within a transaction. If an exception occurs, the transaction is rolled back, and any changes made during the transaction are discarded.
 
 Basically, the service layer abstracts the data access logic from the controller, allowing you to focus on business logic and ensuring that the application follows the separation of concerns principle.
+
+#### Propagation and Isolation Levels
+
+- **Propagation**: Defines how transactions should propagate when a method is called within an existing transaction. Common propagation levels include:
+  - `REQUIRED`: If a transaction exists, use it; otherwise, create a new one.
+  - `REQUIRES_NEW`: Always create a new transaction.
+- **Isolation**: Defines the degree to which a transaction is isolated from the effects of other transactions. Common isolation levels include:
+  - `READ_UNCOMMITTED`: Allows dirty reads, non-repeatable reads, and phantom reads.
+  - `READ_COMMITTED`: Prevents dirty reads but allows non-repeatable reads and phantom reads.
+  - `REPEATABLE_READ`: Prevents dirty reads and non-repeatable reads but allows phantom reads.
+  - `SERIALIZABLE`: Prevents dirty reads, non-repeatable reads, and phantom reads.
+  - `DEFAULT`: Uses the default isolation level of the underlying database.
+
+If you're not familiar with dirty read, non-repeatable read, or phantom read, here's a brief explanation:
+- **Dirty Read**: Occurs when one transaction reads data that has been modified by another transaction but not yet committed. If the modifying transaction rolls back, the reading transaction has read invalid data.
+- **Non-Repeatable Read**: Occurs when a transaction reads the same row multiple times and gets different results due to another transaction updating the row in between reads.
+- **Phantom Read**: Occurs when a transaction reads a set of rows multiple times and gets different results due to another transaction inserting or deleting rows in between reads.
+
+Please note that accessing lazy-loaded associations outside of a transactional context may result in a `LazyInitializationException`. To avoid this, you can:
+- Eagerly fetch the association using `FetchType.EAGER`.
+- Use `JOIN FETCH` in JPQL queries to fetch the association eagerly.
+- Use DTO projections to fetch only the required data.
+- Use `@Transactional` to ensure that the association is fetched within a transactional context.
