@@ -514,3 +514,124 @@ Please note that accessing lazy-loaded associations outside of a transactional c
 - Use `JOIN FETCH` in JPQL queries to fetch the association eagerly.
 - Use DTO projections to fetch only the required data.
 - Use `@Transactional` to ensure that the association is fetched within a transactional context.
+
+### Spring Security
+
+#### Introduction to Spring Security
+
+Spring Security is a powerful and customizable authentication and access control framework for Java applications. It provides comprehensive security services for Java EE-based enterprise software applications.
+
+Spring Security can be used to:
+- Secure web applications using various authentication mechanisms (e.g., form-based, HTTP Basic, OAuth).
+- Implement access control for different parts of the application.
+- Protect against common security vulnerabilities like cross-site scripting (XSS), cross-site request forgery (CSRF), and session fixation.
+- Integrate with external identity providers like LDAP, Active Directory, and OAuth providers.
+- Implement single sign-on (SSO) and federated authentication.
+- Secure REST APIs using token-based authentication (e.g., JWT).
+- Customize security configurations based on roles, permissions, and user attributes.
+- Implement password hashing, encryption, and other security best practices.
+- Monitor and audit security events using logging and monitoring tools.
+
+#### Setting up Spring Security
+
+To add Spring Security to your project, you can include the `spring-boot-starter-security` dependency in your `pom.xml` or `build.gradle` file. Spring Boot autoconfigures security settings based on the presence of this dependency.
+
+#### Basic Authentication
+
+Spring Security provides several authentication mechanisms out of the box. One of the simplest is basic authentication, where the user provides a username and password in the request headers.
+
+To enable basic authentication, you can configure it in the `application.properties` file:
+```properties
+spring.security.user.name=user
+spring.security.user.password=password
+```
+and annotate your main application class with `@EnableWebSecurity`:
+```java
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    // Security configuration goes here
+}
+```
+
+#### Customizing Security Configuration through SecurityFilterChain and WebSecurityConfigurerAdapter
+
+To customize security settings, you can extend `WebSecurityConfigurerAdapter` and override its methods. This allows you to define custom security rules, configure authentication providers, and set up access control.
+
+For example, you can define security rules based on URL patterns:
+```java
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .authorizeRequests()
+                .antMatchers("/public/**").permitAll()
+                .antMatchers("/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+                .and()
+            .formLogin()
+                .loginPage("/login")
+                .permitAll()
+                .and()
+            .logout()
+                .permitAll();
+    }
+}
+```
+
+In this example:
+- Requests to `/public/**` are permitted to all users.
+- Requests to `/admin/**` require the user to have the `ADMIN` role.
+- All other requests require authentication.
+- A custom login page is configured at `/login`.
+- The logout functionality is permitted to all users.
+
+This is using the `WebSecurityConfigurerAdapter` to define security rules based on URL patterns. You can also configure authentication providers, password encoding, and other security settings. Another approach (available from Spring Boot 3.x+) is to use the `SecurityFilterChain` interface to define security rules programmatically. The following example shows how to configure basic authentication using `SecurityFilterChain`:
+```java
+@Configuration
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authorizeRequests ->
+                authorizeRequests
+                    .requestMatchers("/public/**").permitAll()
+                    .requestMatchers("/admin/**").hasRole("ADMIN")
+                    .anyRequest().authenticated()
+            )
+            .formLogin(withDefaults())
+            .logout(withDefaults());
+        return http.build();
+    }
+}
+```
+Note how the `SecurityFilterChain` approach is simpler, more flexible and allows for fine-grained control over security configurations. It's recommended for new projects and provides a more modern way to define security rules.
+
+#### User definitions and password encoding
+
+In a real-world application, you would typically define users and roles in a database or LDAP server. Spring Security provides several ways to define users and roles, including:
+- In-memory user details service
+- JDBC-based user details service
+- Custom user details service
+- LDAP-based user details service
+- OAuth-based user details service
+- External identity providers
+
+When defining users, it's important to hash passwords using a secure algorithm like BCrypt. Spring Security provides password encoding support through the `PasswordEncoder` interface. You can use `BCryptPasswordEncoder` to securely hash passwords:
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+}
+```
+and then encode passwords before storing them in the database:
+```java
+String encodedPassword = passwordEncoder.encode("password");
+```
+When authenticating users, Spring Security automatically decodes the stored password and compares it with the provided password.
+
+This bean is usually part of the `WebSecurityConfigurerAdapter` configuration class, but it can also be defined separately if needed.
+
+
