@@ -1,6 +1,8 @@
 package demo.store.service;
 
+import demo.store.exception.ResourceNotFoundException;
 import demo.store.model.Product;
+import demo.store.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -8,7 +10,7 @@ import java.util.Map;
 
 @Service
 public class ProductService {
-    private Map<Long, Product> products = Map.of(
+    private final Map<Long, Product> products = Map.of(
         1L, new Product(1L, "Product 1", "Apple", 100.0),
         2L, new Product(2L, "Product 2", "Banana", 200.0),
         3L, new Product(3L, "Product 3", "Orange", 300.0),
@@ -21,23 +23,42 @@ public class ProductService {
         10L, new Product(10L, "Product 10", "Spinach", 1000.0)
     );
 
-    public List<Product> getProducts() {
-        return List.copyOf(products.values());
+    private final ProductRepository productRepository;
+
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
     }
 
-    public Product getProduct(Long id) {
-        return products.get(id);
+    public List<Product> findAll() {
+        return productRepository.findAll();
     }
 
-    public void addProduct(Product product) {
-        products.put(product.getId(), product);
+    public Product findById(Long id) {
+        return productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
     }
 
-    public void removeProduct(Long id) {
-        products.remove(id);
+    public Product save(Product product) {
+        return productRepository.save(product);
     }
 
-    public void updateProduct(Product product) {
-        products.put(product.getId(), product);
+    public void deleteById(Long id) {
+        productRepository.deleteById(id);
     }
+
+    public Product update(Product product) {
+        return productRepository.save(product);
+    }
+
+    public void deleteAll() {
+        productRepository.deleteAll();
+    }
+
+    public boolean existsById(Long id) {
+        return productRepository.existsById(id);
+    }
+
+    public long count() {
+        return productRepository.count();
+    }
+
 }

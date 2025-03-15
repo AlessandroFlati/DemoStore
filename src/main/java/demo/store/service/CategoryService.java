@@ -1,6 +1,8 @@
 package demo.store.service;
 
+import demo.store.exception.ResourceNotFoundException;
 import demo.store.model.Category;
+import demo.store.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -8,28 +10,34 @@ import java.util.Map;
 
 @Service
 public class CategoryService {
-    private Map<Long, Category> categories = Map.of(
+    private final Map<Long, Category> categories = Map.of(
         1L, new Category(1L, "Fruits"),
         2L, new Category(2L, "Vegetables")
     );
 
-    public List<Category> getCategories() {
-        return List.copyOf(categories.values());
+    private final CategoryRepository categoryRepository;
+
+    public CategoryService(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
     }
 
-    public Category getCategory(Long id) {
-        return categories.get(id);
+    public List<Category> findAll() {
+        return categoryRepository.findAll();
     }
 
-    public void addCategory(Category category) {
-        categories.put(category.getId(), category);
+    public Category findById(Long id) {
+        return categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
     }
 
-    public void removeCategory(Long id) {
-        categories.remove(id);
+    public void save(Category category) {
+        categoryRepository.save(category);
     }
 
-    public void updateCategory(Category category) {
-        categories.put(category.getId(), category);
+    public void update(Category category) {
+        categoryRepository.save(category);
+    }
+
+    public void deleteById(Long id) {
+        categoryRepository.deleteById(id);
     }
 }

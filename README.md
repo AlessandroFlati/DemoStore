@@ -326,4 +326,168 @@ Typically, you’ll inject a service (e.g., `ProductService`) that encapsulates 
 - You can simply throw custom exceptions or use Spring's built-in exceptions (e.g., `ResponseEntityException`) to handle errors and return appropriate HTTP status codes.
 - Use `@ControllerAdvice` to define global exception handling for all controllers. This allows you to centralize exception handling logic and avoid duplicating code. More on this later
 
+#### Handling Updates, Deletions, and Basic Error Handling & Validation
 
+###### PUT vs PATCH
+Use `PUT` to update an entire resource and `PATCH` to update only specific fields.
+When implementing updates, ensure that:
+- The endpoint receives the resource ID (tipically as a path variable).
+- The JSON payload is converted into an entity or DTO via `@RequestBody`.
+- Appropriate service methods are called to update the resource.
+
+###### DELETE
+Use `DELETE` to remove a resource. The endpoint should receive the resource ID as a path variable and call the corresponding service method to delete the resource.
+Ensure the service layer safely removes the entity, handling any potential issues (such as dependent records or integrity constraints).
+
+Return a status like `204 No Content` to indicate a successful deletion.
+
+#### Data validation
+
+Apply constraint on entity fields, or, preferably, on DTOs to ensure that the data is valid before processing it. Use annotations like `@NotNull`, `@Size`, `@Pattern`, etc., to enforce constraints.
+
+In particular, use `@Valid` in the controller method to trigger validation on the request body. If validation fails, Spring will automatically return a `400 Bad Request` response with details about the validation errors.
+```java
+@PostMapping
+public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
+    // Service call and return response
+}
+```
+
+#### Basic Error Handling
+
+For cases where a resource is not found, you might throw a custom exception (e.g., `ResourceNotFoundException`) which can then be translated into an appropriate HTTP status code (e.g., `404 Not Found`).
+
+Use Spring's `ResponseStatusException` for quick error responses. 
+
+Optionally, introduce a global exception handler using `@ControllerAdvice` to centralize exception handling and customize error messages.
+
+#### Controller Advice
+
+`@ControllerAdvice` is an annotation used to define global exception handlers in Spring MVC. It allows you to centralize exception handling logic and apply it across multiple controllers.
+
+- **Centralized Exception Handling**: With `@ControllerAdvice`, you can create methods annotated with @ExceptionHandler that catch specific exceptions (or a group of exceptions) from all controllers, returning custom responses (e.g., specific HTTP status codes, error messages).
+- **Global Data Binding**: It also supports global model attributes and data binding settings, which can be useful for pre-populating common data needed by multiple controllers.
+- **Cleaner Controllers**: By moving exception handling logic to a separate class, you can keep your controllers clean and focused on request handling, improving code readability and maintainability.
+
+Imagine a scenario where any `ResourceNotFoundException` thrown anywhere in your controllers should result in a 404 Not Found response. You could define a global exception handler like this:
+```java
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse("Resource Not Found", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+}
+```
+
+You could even create a custom `ErrorResponse` class to standardize error responses across your application:
+```java
+public class ErrorResponse {
+    private String error;
+    private String message;
+    private LocalDateTime timestamp;
+
+    public ErrorResponse(String error, String message) {
+        this.error = error;
+        this.message = message;
+        this.timestamp = LocalDateTime.now();
+    }
+
+    // Getters and setters omitted for brevity
+}
+```
+and a custom `ResourceNotFoundException` class:
+```java
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+```
+so that you can define your `@ControllerAdvice` class like this:
+```java
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Handle ResourceNotFoundException globally
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse("Resource Not Found", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    // Handle validation errors or other exceptions as needed
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse("Internal Server Error", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+```
+This way, you can define custom error responses for different types of exceptions and ensure a consistent error handling approach across your application. In the controllers, you can simply throw a `ResourceNotFoundException` when needed, and the global exception handler will take care of returning the appropriate response.
+
+### Repository and Service Layers Integration
+
+#### Repository Layer
+
+The repository layer is responsible for interacting with the database. It typically consists of interfaces that extend `JpaRepository` or `CrudRepository`.
+
+Spring Data JPA provides built-in methods for common CRUD operations, eliminating the need to write boilerplate code. For example:
+- `save(entity)`: Saves an entity to the database.
+- `findById(id)`: Retrieves an entity by its ID.
+- `findAll()`: Retrieves all entities.
+- `delete(entity)`: Deletes an entity.
+- `deleteById(id)`: Deletes an entity by its ID.
+- `existsById(id)`: Checks if an entity exists by its ID.
+- `count()`: Returns the total number of entities.
+
+The implementation is straightforward:
+```java
+public interface ProductRepository extends JpaRepository<Product, Long> {
+    // Additional query methods can be defined here if needed.
+}
+```
+
+#### Service Layer
+
+The service layer contains business logic and orchestrates interactions between the controller and repository layers. It encapsulates complex operations and ensures that the business rules are enforced.
+
+We already saw how to create a simple service class that returns a greeting message. In a real-world application, the service layer would interact with the repository layer to perform CRUD operations on entities, like:
+```java
+@Service
+public class ProductService {
+    private final ProductRepository productRepository;
+
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
+
+    public List<Product> findAll() {
+        return productRepository.findAll();
+    }
+
+    public Product findById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id " + id));
+    }
+
+    public Product save(Product product) {
+        return productRepository.save(product);
+    }
+
+    public void delete(Long id) {
+        Product product = findById(id);
+        productRepository.delete(product);
+    }
+}
+```
+
+#### Transaction Management
+
+Although basic CRUD operations are handled by Spring Data, you might need to annotate service methods with `@Transactional` if the operations involve multiple steps that must either complete successfully or roll back together.
+
+The `@Transactional` annotation ensures that the annotated method runs within a transaction. If an exception occurs, the transaction is rolled back, and any changes made during the transaction are discarded.
+
+Basically, the service layer abstracts the data access logic from the controller, allowing you to focus on business logic and ensuring that the application follows the separation of concerns principle.

@@ -17,28 +17,28 @@ public class ProductController {
 
     @GetMapping("")
     public List<Product> getProducts() {
-        return productService.getProducts();
+        return productService.findAll();
     }
 
     @GetMapping("/{id}")
     public Product getProduct(@PathVariable Long id) {
-        return productService.getProduct(id);
+        return productService.findById(id);
     }
 
     @PostMapping("")
     public void addProduct(@RequestBody Product product) {
-        productService.addProduct(product);
+        productService.save(product);
     }
 
     @PutMapping("/{id}")
     public void updateProduct(@PathVariable Long id, @RequestBody Product product) {
         product.setId(id);
-        productService.updateProduct(product);
+        productService.update(product);
     }
 
     @DeleteMapping("/{id}")
     public void removeProduct(@PathVariable Long id) {
-        productService.removeProduct(id);
+        productService.deleteById(id);
     }
 
 }
