@@ -4,11 +4,19 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
 
 @Aspect
 @Component
 public class LoggingAspect {
+
+    @Scheduled(fixedRate = 5000)
+    public void reportCurrentTime() {
+        System.out.println("Current time: " + LocalDateTime.now());
+    }
 
     @Before("execution(* demo.store.controller.*.*(..))")
     public void logBefore(JoinPoint joinPoint) {

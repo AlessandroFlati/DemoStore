@@ -838,3 +838,117 @@ In this example:
 - The `..` in the expression indicates that any number of arguments can be passed to the method.
 - The `@Around` advice can be used to control the execution of the join point, allowing you to modify the input or output, handle exceptions, or even skip the execution altogether.
 
+### Caching and Scheduling
+
+#### Caching
+Caching is a technique used to store frequently accessed data in memory to improve performance and reduce the load on the underlying data source (e.g., database, API). Spring provides a powerful caching abstraction that allows you to easily integrate caching into your application.
+To enable caching in a Spring Boot application, you need to add the `spring-boot-starter-cache` dependency to your project:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-cache</artifactId>
+</dependency>
+```
+or
+```groovy
+implementation 'org.springframework.boot:spring-boot-starter-cache'
+```
+Then, you can enable caching by annotating your main application class with `@EnableCaching`:
+```java
+@SpringBootApplication
+@EnableCaching
+public class MyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+#### Caching Annotations
+Spring provides several annotations for caching:
+- `@Cacheable`: Indicates that the result of a method should be cached. The next time the method is called with the same arguments, the cached result will be returned instead of executing the method again.
+- `@CachePut`: Indicates that the result of a method should be cached, but the method is always executed. This is useful for updating the cache with new data.
+- `@CacheEvict`: Indicates that a cache entry should be removed. This is useful for invalidating cached data when it becomes stale or when the underlying data changes.
+- `@CacheConfig`: Used to define common cache settings for a class, such as the cache name and default expiration time.
+
+A typical example of using caching annotations would be:
+```java
+@Cacheable("products")
+public List<Product> getAllProducts() {
+    // Expensive database call or complex business logic
+    return productRepository.findAll();
+}
+
+@CachePut(value = "products", key = "#product.id")
+public Product updateProduct(Product product) {
+    return productRepository.save(product);
+}
+
+@CacheEvict(value = "products", key = "#id")
+public void deleteProduct(Long id) {
+    productRepository.deleteById(id);
+}
+```
+
+In this example:
+- The `getAllProducts` method is annotated with `@Cacheable`, which means that the result will be cached. The next time this method is called with the same arguments, the cached result will be returned.
+- The `updateProduct` method is annotated with `@CachePut`, which means that the method will be executed, and the result will be cached. This is useful for updating the cache with new data.
+- The `deleteProduct` method is annotated with `@CacheEvict`, which means that the cache entry for the specified product ID will be removed when this method is called. This is useful for invalidating cached data when it becomes stale or when the underlying data changes.
+
+#### Caching Providers
+Spring supports various caching providers, including:
+- **Ehcache**: A popular open-source caching library that provides in-memory and disk-based caching.
+- **Caffeine**: A high-performance caching library that provides in-memory caching with advanced features like automatic eviction and expiration.
+- **Hazelcast**: An in-memory data grid that provides distributed caching and data storage.
+- **Redis**: An in-memory data structure store that can be used as a caching provider.
+- **Infinispan**: A distributed in-memory key/value data store and cache.
+- **JCache (JSR-107)**: A standard caching API for Java that provides a common interface for different caching providers.
+
+To use a specific caching provider, you need to add the corresponding dependency to your project and configure it in your `application.properties` file. For example, to use Caffeine, you would add the following dependency:
+```xml
+<dependency>
+  <groupId>com.github.ben-manes.caffeine</groupId>
+  <artifactId>caffeine</artifactId>
+  <version>3.9.4</version>
+</dependency>
+```
+or
+```groovy
+implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+```
+and configure it in your `application.properties` file:
+```properties
+spring.cache.type=caffeine
+spring.cache.caffeine.spec=maximumSize=100,expireAfterAccess=10m
+```
+
+This configuration sets the cache type to Caffeine and specifies a maximum size of 100 entries and an expiration time of 10 minutes after the last access.
+
+#### Scheduling
+
+Scheduling is a technique used to execute tasks at specific intervals or at specific times. Spring provides a powerful scheduling abstraction that allows you to easily schedule tasks in your application.
+Scheduling is already provided with the `spring-boot-starter` dependency, so you don't need to add any additional dependencies.
+
+To enable scheduling in a Spring Boot application, you need to annotate your main application class with `@EnableScheduling`:
+```java
+@SpringBootApplication
+@EnableScheduling
+public class MyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+#### Scheduling Annotations
+Spring provides several annotations for scheduling:
+- `@Scheduled`: Indicates that a method should be executed at a fixed interval or at a specific time. You can specify the interval using cron expressions, fixed rates, or fixed delays.
+  - `@Scheduled(fixedRate = 5000)`: Executes the method every 5 seconds.
+  - `@Scheduled(fixedDelay = 5000)`: Executes the method every 5 seconds after the previous execution
+  - `@Scheduled(cron = "0 0/5 * * * ?")`: Executes the method every 5 minutes using a cron expression.
+
+
+
+
+
+
