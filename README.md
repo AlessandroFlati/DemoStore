@@ -1233,4 +1233,343 @@ Other tools for static code analysis include PMD, FindBugs, and SpotBugs. These 
 - **Spotless**: A code formatting tool that integrates with various build tools (e.g., Maven, Gradle) and IDEs. Spotless can automatically format your code according to predefined rules and coding standards. It supports multiple languages, including Java, Kotlin, and Groovy.
 - **Prettier**: A code formatter that supports multiple languages and integrates with various IDEs and build tools. Prettier automatically formats your code according to a set of rules, ensuring consistent code style across your project. It is particularly popular in the JavaScript and TypeScript communities but can also be used for Java projects.
 
-### 
+### Better logging and monitoring
+
+#### Logging (Part 2)
+Logging is an essential aspect of any application, as it helps you monitor the application's behavior, troubleshoot issues, and gather insights into its performance. Spring Boot provides built-in support for logging through the SLF4J (Simple Logging Facade for Java) API and Logback as the default logging implementation.
+You can configure logging in your Spring Boot application using the `application.properties` or `application.yml` file. You can set the logging level, specify the logging format, and configure log file locations.
+```properties
+# Set the logging level for the entire application
+logging.level.root=INFO
+# Set the logging level for a specific package
+logging.level.com.demostore=DEBUG
+# Set the logging pattern for the console output
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
+# Set the logging pattern for the file output
+logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
+# Set the log file name and location
+logging.file.name=logs/application.log
+# Set the log file size and retention policy
+logging.file.size=10MB
+logging.file.max-history=30
+```
+You can also configure logging using YAML:
+```yaml
+logging:
+  level:
+    root: INFO
+    com.demostore: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: logs/application.log
+    size: 10MB
+    max-history: 30
+```
+
+Apart from the native Java logging, Spring Boot also supports other logging frameworks like Log4j2 and Log4j. You can use these frameworks by adding the corresponding dependencies to your project and configuring them in the `application.properties` or `application.yml` file.
+For example, to use Log4j2, you need to add the following dependencies to your `pom.xml` or `build.gradle` file:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-log4j2</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-core</artifactId>
+    <version>2.17.1</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-slf4j-impl</artifactId>
+    <version>2.17.1</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-api</artifactId>
+    <version>2.17.1</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-web</artifactId>
+    <version>2.17.1</version>
+</dependency>
+```
+or
+```groovy
+implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
+implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.17.1'
+implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
+implementation 'org.apache.logging.log4j:log4j-web:2.17.1'
+```
+
+Then, you can create a `log4j2.xml` file in the `src/main/resources` directory to configure Log4j2:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} - %msg%n"/>
+        </Console>
+        <File name="File" fileName="logs/application.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} - %msg%n"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Root>
+    </Loggers>
+</Configuration>
+```
+This configuration defines two appenders: one for console output and one for file output. The logging level is set to `INFO` for the root logger, and both appenders are attached to it.
+You can also configure Log4j2 using YAML or JSON formats. For example, to use YAML, you can create a `log4j2.yml` file in the `src/main/resources` directory:
+```yaml
+Configuration:
+  status: WARN
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    File:
+      name: File
+      fileName: logs/application.log
+      PatternLayout:
+        pattern: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  Loggers:
+    Root:
+      level: info
+      AppenderRef:
+        - ref: Console
+        - ref: File
+```
+or JSON:
+```json
+{
+  "Configuration": {
+    "status": "WARN",
+    "Appenders": {
+      "Console": {
+        "name": "Console",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": {
+          "pattern": "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+        }
+      },
+      "File": {
+        "name": "File",
+        "fileName": "logs/application.log",
+        "PatternLayout": {
+          "pattern": "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+        }
+      }
+    },
+    "Loggers": {
+      "Root": {
+        "level": "info",
+        "AppenderRef": [
+          {"ref": "Console"},
+          {"ref": "File"}
+        ]
+      }
+    }
+  }
+}
+```
+
+#### Monitoring
+Monitoring is the process of collecting and analyzing data about your application's performance, resource usage, and behavior. Monitoring helps you identify issues, optimize performance, and ensure the reliability of your application.
+Spring Boot provides built-in support for monitoring through the Actuator module. The Actuator module exposes various endpoints that provide information about the application's health, metrics, and environment.
+To use the Actuator module in your Spring Boot application, you need to add the `spring-boot-starter-actuator` dependency to your project:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+or
+```groovy
+implementation 'org.springframework.boot:spring-boot-starter-actuator'
+```
+
+Then, you can configure the Actuator endpoints in your `application.properties` or `application.yml` file:
+```properties
+# Enable all Actuator endpoints
+# management.endpoints.web.exposure.include=*
+# Or just enable specific Actuator endpoints
+management.endpoints.web.exposure.include=health,info,metrics
+# Enable Actuator endpoints over HTTP
+management.endpoints.web.base-path=/actuator
+# Enable Actuator endpoints over JMX
+management.endpoints.jmx.exposure.include=*
+# Enable Actuator health check
+management.health.diskspace.enabled=true
+# Set the disk space threshold for the health check
+management.health.diskspace.threshold=10MB
+# Set the health check status
+management.endpoint.health.status.http-mapping.UP=200
+management.endpoint.health.status.http-mapping.DOWN=503
+```
+or
+```yaml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+    jmx:
+      exposure:
+        include: "*"
+  health:
+    diskspace:
+      enabled: true
+      threshold: 10MB
+  endpoint:
+    health:
+      status:
+        http-mapping:
+          UP: 200
+          DOWN: 503
+```
+You can access the Actuator endpoints by sending HTTP requests to the `/actuator` base path. For example, to check the application's health, you can send a GET request to `/actuator/health`. The response will include information about the application's health status and any additional health indicators that are enabled.
+```bash
+curl -X GET http://localhost:8080/actuator/health
+```
+The response will look like this:
+```json
+{
+  "status": "UP",
+  "components": {
+    "diskSpace": {
+      "status": "UP",
+      "details": {
+        "total": 1000000000,
+        "free": 500000000,
+        "threshold": 10000000
+      }
+    }
+  }
+}
+```
+In this example, the `status` field indicates that the application is healthy (`UP`), and the `components` field provides additional information about the disk space health indicator.
+You can also access other Actuator endpoints, such as `/actuator/info`, which provides information about the application, and `/actuator/metrics`, which provides various metrics about the application's performance and resource usage.
+```bash
+curl -X GET http://localhost:8080/actuator/info
+```
+The response will look like this:
+```json
+{
+  "app": {
+    "name": "My Application",
+    "version": "1.0.0"
+  }
+}
+```
+```bash
+curl -X GET http://localhost:8080/actuator/metrics
+```
+The response will look like this:
+```json
+{
+  "names": [
+    "jvm.memory.used",
+    "jvm.gc.pause",
+    "system.cpu.usage",
+    "http.server.requests"
+  ]
+}
+```
+You can also use the `/actuator/metrics/{metricName}` endpoint to get detailed information about a specific metric. For example, to get information about the `jvm.memory.used` metric, you can send a GET request to `/actuator/metrics/jvm.memory.used`.
+```bash
+curl -X GET http://localhost:8080/actuator/metrics/jvm.memory.used
+```
+The response will look like this:
+```json
+{
+  "name": "jvm.memory.used",
+  "description": "Memory used",
+  "measurements": [
+    {
+      "statistic": "VALUE",
+      "value": 123456789
+    }
+  ],
+  "availableTags": []
+}
+```
+In this example, the `measurements` field provides the value of the `jvm.memory.used` metric, which indicates the amount of memory used by the JVM.
+You can also use the `/actuator/heapdump` endpoint to get a heap dump of the application. A heap dump is a snapshot of the memory used by the application, which can be useful for analyzing memory leaks and performance issues.
+```bash
+curl -X GET http://localhost:8080/actuator/heapdump
+```
+The response will be a binary file containing the heap dump. You can save this file and analyze it using tools like Eclipse Memory Analyzer (MAT) or VisualVM.
+You can also use the `/actuator/threaddump` endpoint to get a thread dump of the application. A thread dump is a snapshot of the threads running in the JVM, which can be useful for analyzing performance issues and deadlocks.
+```bash
+curl -X GET http://localhost:8080/actuator/threaddump
+```
+The response will be a plain text file containing the thread dump. You can save this file and analyze it using tools like VisualVM or JConsole.
+```bash
+curl -X GET http://localhost:8080/actuator/loggers
+```
+The response will look like this:
+```json
+{
+  "loggers": {
+    "com.demostore": {
+      "configuredLevel": "DEBUG",
+      "effectiveLevel": "DEBUG"
+    },
+    "org.springframework": {
+      "configuredLevel": "INFO",
+      "effectiveLevel": "INFO"
+    }
+  }
+}
+```
+
+And of course many, many more endpoints are available. You can find the complete list of Actuator endpoints in the [Spring Boot documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator).
+
+#### Monitoring with Micrometer
+Micrometer is a metrics collection and monitoring library that integrates with Spring Boot. It provides a simple and consistent API for collecting application metrics and supports various monitoring systems, such as Prometheus, Grafana, InfluxDB, and more.
+To use Micrometer in your Spring Boot application, you need to add the `micrometer-core` dependency to your project:
+```xml
+<dependency>
+  <groupId>io.micronaut.micrometer</groupId>
+  <artifactId>micronaut-micrometer-core</artifactId>
+  <version>5.8.0</version>
+</dependency>
+```
+or
+```groovy
+implementation 'io.micronaut.micrometer:micronaut-micrometer-core:5.8.0'
+```
+
+You can also add the dependencies for the specific monitoring system you want to use. For example, to use Prometheus, you need to add the following dependency:
+```xml
+<dependency>
+  <groupId>io.micronaut.micrometer</groupId>
+  <artifactId>micronaut-micrometer-registry-prometheus</artifactId>
+  <version>5.8.0</version>
+</dependency>
+```
+or
+```groovy
+implementation 'io.micronaut.micrometer:micronaut-micrometer-registry-prometheus:5.8.0'
+```
+
+Then, you can configure Micrometer in your `application.properties` or `application.yml` file:
+```properties
+# Enable Micrometer metrics
+management.prometheus.metrics.export.pushgateway.base-url=http://localhost:9091
+management.prometheus.metrics.export.pushgateway.job=store
+management.prometheus.metrics.export.pushgateway.push-rate=1m
+management.prometheus.metrics.export.pushgateway.shutdown-operation=delete
+management.prometheus.metrics.export.pushgateway.username=admin
+management.prometheus.metrics.export.pushgateway.password=admin
+```
