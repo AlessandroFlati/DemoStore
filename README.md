@@ -766,3 +766,75 @@ Remember that JWT and form-based authentication are not mutually exclusive. You 
 
 That said, you can't use JWT for form-based authentication, as the latter relies on server-side sessions to maintain user state. JWT is designed for stateless authentication, where the server does not store session information. Instead, the client sends the JWT token with each request, and the server validates it without maintaining session state. However, you can use JWT for stateless authentication in REST APIs while still using form-based authentication for web applications. Spring Security allows you to configure both methods side by side, depending on your application's requirements.
 
+### Aspect Oriented Programming (AOP) for Logging and Cross-cutting Concerns
+
+#### Introduction to AOP
+Aspect Oriented Programming (AOP) is a programming paradigm that allows you to separate cross-cutting concerns from the main business logic of your application. Cross-cutting concerns are aspects of a program that affect multiple modules, such as logging, security, transaction management, and error handling.
+AOP allows you to define these concerns in a modular way, making your code cleaner and easier to maintain. In Spring, AOP is implemented using proxies and aspects.
+
+#### Key Concepts of AOP
+- **Aspect**: A module that encapsulates a cross-cutting concern. In Spring, an aspect is typically defined using the `@Aspect` annotation.
+- **Join Point**: A point in the execution of the program where an aspect can be applied. This can be a method call, object instantiation, or field access.
+- **Advice**: The action taken by an aspect at a join point. There are different types of advice:
+  - **Before**: Executed before the join point.
+  - **After**: Executed after the join point, regardless of its outcome.
+  - **After Returning**: Executed after the join point if it completes successfully.
+  - **After Throwing**: Executed if the join point throws an exception.
+  - **Around**: Surrounds the join point, allowing you to control its execution.
+- **Pointcut**: An expression that defines a set of join points where advice should be applied. Pointcuts can be defined using annotations, method names, or regular expressions.
+
+#### Enabling AOP in Spring
+To enable AOP in a Spring Boot application, you need to add the `spring-boot-starter-aop` dependency to your project. This starter includes the necessary dependencies for using AOP with Spring.
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
+```
+or
+```groovy
+implementation 'org.springframework.boot:spring-boot-starter-aop'
+```
+
+Then, you have to annotate your main application class with `@EnableAspectJAutoProxy` to enable AOP support:
+```java
+@SpringBootApplication
+@EnableAspectJAutoProxy
+public class MyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+#### Creating an Aspect
+To create an aspect, you need to define a class annotated with `@Aspect`. Inside this class, you can define pointcuts and advice methods.
+For example, to log method execution times, you can create an aspect like this:
+```java
+@Aspect
+@Component
+public class LoggingAspect {
+
+  // Log before execution of any method in the service package
+  @Before("execution(* com.demostore.service.*.*(..))")
+  public void logBefore(JoinPoint joinPoint) {
+    System.out.println("Entering method: " + joinPoint.getSignature().getName());
+  }
+
+  // Log after the method returns
+  @AfterReturning(pointcut = "execution(* com.demostore.service.*.*(..))", returning = "result")
+  public void logAfterReturning(JoinPoint joinPoint, Object result) {
+    System.out.println("Method " + joinPoint.getSignature().getName() + " returned: " + result);
+  }
+}
+```
+
+In this example:
+- The `@Aspect` annotation marks the class as an aspect.
+- The `@Before` annotation defines a pointcut that matches all methods in the `com.demostore.service` package. The advice method `logBefore` is executed before the matched methods.
+- The `@AfterReturning` annotation defines a pointcut that matches all methods in the `com.demostore.service` package. The advice method `logAfterReturning` is executed after the matched methods return successfully, and it receives the result of the method as a parameter.
+- The `JoinPoint` parameter provides information about the method being executed, such as its name and arguments.
+- The `execution` expression specifies the join points where the advice should be applied. You can use wildcards and other expressions to match specific methods or packages.
+- The `..` in the expression indicates that any number of arguments can be passed to the method.
+- The `@Around` advice can be used to control the execution of the join point, allowing you to modify the input or output, handle exceptions, or even skip the execution altogether.
+
