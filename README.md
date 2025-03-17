@@ -635,3 +635,134 @@ When authenticating users, Spring Security automatically decodes the stored pass
 This bean is usually part of the `WebSecurityConfigurerAdapter` configuration class, but it can also be defined separately if needed.
 
 
+#### Advanced Authorization and JWT integration
+Spring Security provides advanced authorization features, including method-level security and role-based access control. You can use annotations like `@PreAuthorize`, `@PostAuthorize`, `@Secured`, and `@RolesAllowed` to secure methods based on user roles and permissions.
+```java
+@PreAuthorize("hasRole('ADMIN')")
+@DeleteMapping("/api/products/{id}")
+public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+    productService.delete(id);
+    return ResponseEntity.noContent().build();
+}
+```
+In this example, the `deleteProduct` method is secured with the `@PreAuthorize` annotation, which checks if the user has the `ADMIN` role before allowing access to the method.
+
+Of course, you can always define these restrictions in your security configuration class like we did before, if you aim for centralization.
+
+#### JWT (JSON Web Token) Authentication
+
+JWT is a compact, URL-safe means of representing claims to be transferred between two parties. It allows you to securely transmit information as a JSON object, which can be verified and trusted because it is digitally signed.
+
+A JWT token typically consists of three parts:
+- **Header**: Contains metadata about the token, such as the algorithm used for signing (e.g. HS256).
+- **Payload**: Contains the claims or data being transmitted. This can include user information, roles, and expiration time.
+- **Signature**: The header and payload are base64-encoded and concatenated with a period (.) separator. The signature is created by signing the encoded header and payload with a secret key.
+
+The main advantage of using JWT is that it allows stateless authentication, meaning the server does not need to store session information. The client can send the token with each request, and the server can verify its validity without needing to maintain session state.
+To implement JWT authentication in a Spring Boot application, you typically follow these steps:
+1. **Generate JWT Token**: When a user successfully logs in, generate a JWT token containing user information and roles. Sign the token with a secret key.
+2. **Send JWT Token to Client**: Return the generated token to the client in the response body or as a cookie.
+3. **Client Stores JWT Token**: The client stores the token (e.g., in local storage or a cookie) and includes it in the Authorization header of subsequent requests.
+4. **Validate JWT Token**: On each request, the server validates the token by checking its signature and expiration time. If valid, extract user information and roles from the token.
+5. **Authorize Access**: Based on the user information and roles extracted from the token, authorize access to protected resources.
+6. **Refresh Token (optional)**: Implement a refresh token mechanism to allow users to obtain a new JWT token without re-authenticating. This is useful for long-lived sessions.
+7. **Logout (optional)**: Implement a logout mechanism to invalidate the JWT token on the server side. This can be done by maintaining a blacklist of revoked tokens or using short-lived tokens with refresh tokens.
+
+As a conceptual overview, here's how you might implement JWT authentication in a Spring Boot application:
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @Autowired
+    private JwtRequestFilter jwtRequestFilter;
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.csrf().disable()
+            .authorizeRequests(authorizeRequests ->
+                    authorizeRequests.requestMatchers("/authenticate").permitAll()
+                    .anyRequest().authenticated()
+            )
+            .and()
+            .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint)
+            .and()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+or through a dedicated class extending one of the base Spring Security classes (e.g. `OncePerRequestFilter`): 
+```java
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private final JwtUtil jwtUtil;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            if (jwtUtil.validateToken(token)) {
+                Authentication auth = jwtUtil.getAuthentication(token);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
+        }
+        filterChain.doFilter(request, response);
+    }
+}
+```
+This filter checks for the presence of a JWT token in the Authorization header, validates it, and sets the authentication context if valid.
+
+If you follow the latter approach, the configuration class would change like this:
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @Autowired
+    private JwtRequestFilter jwtRequestFilter;
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .authorizeRequests(authorizeRequests ->
+                authorizeRequests
+                .requestMatchers("/authenticate").permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+One does not preclude the other, and you can use both approaches together if needed.
+
+Remember that JWT and form-based authentication are not mutually exclusive. You can use JWT for stateless authentication in REST APIs while still using form-based authentication for web applications. Spring Security allows you to configure both methods side by side, depending on your application's requirements. 
+
+That said, you can't use JWT for form-based authentication, as the latter relies on server-side sessions to maintain user state. JWT is designed for stateless authentication, where the server does not store session information. Instead, the client sends the JWT token with each request, and the server validates it without maintaining session state. However, you can use JWT for stateless authentication in REST APIs while still using form-based authentication for web applications. Spring Security allows you to configure both methods side by side, depending on your application's requirements.
+
