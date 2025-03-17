@@ -948,7 +948,289 @@ Spring provides several annotations for scheduling:
   - `@Scheduled(cron = "0 0/5 * * * ?")`: Executes the method every 5 minutes using a cron expression.
 
 
+### Testing and Quality Code
 
+#### Unit Testing with JUnit and Mockito
+JUnit is a popular testing framework for Java applications. It provides annotations and assertions to write unit tests for your code. Mockito is a mocking framework that allows you to create mock objects for testing purposes.
+Mockito is often used in conjunction with JUnit to create unit tests for your service and repository layers. It allows you to mock dependencies and verify interactions between objects.
 
+To use JUnit and Mockito in your Spring Boot application, you need to add the following dependencies to your `pom.xml` or `build.gradle` file:
+```xml
 
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+or
+```groovy
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+testImplementation 'org.mockito:mockito-core'
+testImplementation 'org.mockito:mockito-junit-jupiter'
+testImplementation 'org.junit.jupiter:junit-jupiter-engine'
+testImplementation 'org.junit.jupiter:junit-jupiter-api'
+testImplementation 'org.junit.jupiter:junit-jupiter-params'
+```
 
+#### Writing Unit Tests
+Unit tests are typically written in the `src/test/java` directory of your project. You can create test classes that mirror the structure of your main application classes.
+For example, if you have a `ProductService` class, you can create a corresponding test class named `ProductServiceTest`. In this test class, you can use JUnit and Mockito to write unit tests for the service methods.
+
+You would typically use the `@SpringBootTest` annotation to load the application context and the `@MockBean` annotation to create mock objects for dependencies. You can also use the `@InjectMocks` annotation to inject the mock objects into the class under test.
+```java
+@SpringBootTest
+public class ProductServiceTest {
+
+  @Mock
+  private ProductRepository productRepository;
+
+  @InjectMocks
+  private ProductService productService;
+
+  @Test
+  public void testFindAll() {
+    List<Product> products = Arrays.asList(
+            new Product(1L, "Product 1", "Apple", 100.),
+            new Product(2L, "Product 2", "Banana", 200.)
+    );
+    Mockito.when(productRepository.findAll()).thenReturn(products);
+
+    List<Product> result = productService.findAll();
+
+    assertEquals(2, result.size());
+    Mockito.verify(productRepository, Mockito.times(1)).findAll();
+  }
+}
+```
+
+In this example:
+- The `@SpringBootTest` annotation loads the application context for the test.
+- The `@Mock` annotation creates a mock object for the `ProductRepository` dependency.
+- The `@InjectMocks` annotation injects the mock object into the `ProductService` instance.
+- The `@Test` annotation marks the method as a test case.
+- The `Mockito.when` method is used to define the behavior of the mock object when the `findAll` method is called.
+- The `assertEquals` method is used to assert that the result of the `findAll` method is as expected.
+- The `Mockito.verify` method is used to verify that the `findAll` method of the `productRepository` was called exactly once.
+- You can also use parameterized tests to run the same test with different inputs. JUnit 5 provides the `@ParameterizedTest` annotation for this purpose. You can use various sources for parameters, such as `@ValueSource`, `@MethodSource`, or `@CsvSource`.
+```java
+@ParameterizedTest
+@ValueSource(ints = {1, 2, 3})
+public void testFindById(int id) {
+    Product product = new Product(id, "Product " + id, "Apple", 100.);
+    Mockito.when(productRepository.findById((long) id)).thenReturn(Optional.of(product));
+
+    Product result = productService.findById((long) id);
+
+    assertEquals(product, result);
+    Mockito.verify(productRepository, Mockito.times(1)).findById((long) id);
+}
+```
+In this example, the `@ParameterizedTest` annotation is used to run the `testFindById` method with different values for the `id` parameter. The `@ValueSource` annotation provides the values for the parameterized test.
+You can also use `@MethodSource` to provide a method that returns a stream of arguments for the test:
+```java
+@ParameterizedTest
+@MethodSource("productProvider")
+public void testFindById(Product product) {
+    Mockito.when(productRepository.findById(product.getId())).thenReturn(Optional.of(product));
+
+    Product result = productService.findById(product.getId());
+
+    assertEquals(product, result);
+    Mockito.verify(productRepository, Mockito.times(1)).findById(product.getId());
+}
+
+private static Stream<Arguments> productProvider() {
+    return Stream.of(
+            Arguments.of(new Product(1L, "Product 1", "Apple", 100.)),
+            Arguments.of(new Product(2L, "Product 2", "Banana", 200.))
+    );
+}
+```
+In this example, the `productProvider` method returns a stream of `Arguments` objects, each containing a `Product` instance. The `testFindById` method is executed for each product in the stream.
+
+Please note the advantage that Mockito provides over JUnit: it allows you to create mock objects for dependencies, which makes it easier to isolate the class under test and verify interactions between objects. This is particularly useful when testing service and repository layers, where you may need to mock database calls or external API calls. Mockito also provides features like argument matchers, verification, and stubbing, which make it a powerful tool for writing unit tests. You can use Mockito to create mock objects, define their behavior, and verify interactions with them.
+
+#### Integration Testing with Spring Boot
+Integration testing is the process of testing the interaction between different components of your application. In a Spring Boot application, integration tests typically involve loading the application context and testing the behavior of multiple components together.
+Integration tests are typically written in the `src/test/java` directory of your project. You can create test classes that mirror the structure of your main application classes.
+For example, if you have a `ProductController` class, you can create a corresponding test class named `ProductControllerTest`. In this test class, you can use JUnit and Spring's testing support to write integration tests for the controller methods.
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
+public class ProductControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Mock
+    private ProductService productService;
+
+    @Test
+    @WithMockUser(username = "user")
+    public void testGetAllProducts() throws Exception {
+      List<Product> products = Arrays.asList(
+              new Product(1L, "Product 1", "Apple", 100.),
+              new Product(2L, "Product 2", "Banana", 200.)
+      );
+      Mockito.when(productService.findAll()).thenReturn(products);
+  
+      mockMvc.perform(
+                      get("/api/products")
+                              .contentType("application/json")
+                              .accept("application/json")
+              )
+              .andExpect(status().isOk())
+              .andDo(
+                      result -> System.out.println(result.getResponse().getContentAsString())
+              )
+              .andExpect(jsonPath("$[0].name").value("Product 1"))
+              .andExpect(jsonPath("$[1].name").value("Product 2"));
+    }
+}
+```
+In this example:
+- The `@SpringBootTest` annotation loads the application context for the test. The `webEnvironment` attribute is set to `RANDOM_PORT`, which means that a random port will be used for the embedded web server.
+- The `@AutoConfigureMockMvc` annotation configures the `MockMvc` instance for testing the controller.
+- The `@Autowired` annotation injects the `MockMvc` instance into the test class.
+- The `@Mock` annotation creates a mock object for the `ProductService` dependency.
+- The `@WithMockUser` annotation creates a mock user with the specified username and roles for testing purposes. This is useful for testing secured endpoints that require authentication.
+- The `mockMvc.perform` method is used to perform a GET request to the `/api/products` endpoint. The request is configured with the content type and accept headers.
+- The `andExpect` method is used to assert the expected status code and response content. The `jsonPath` method is used to assert the values of specific fields in the JSON response.
+- The `andDo` method is used to print the response content for debugging purposes.
+
+Please note that since we're using an in-memory database for testing, you don't need to set up a separate database for integration tests, otherwise the test will fail.
+
+#### Code Quality and Static Analysis
+Code quality is an important aspect of software development. It refers to the overall quality of the codebase, including readability, maintainability, and adherence to coding standards. High-quality code is easier to understand, modify, and extend, which leads to fewer bugs and better collaboration among developers.
+To ensure code quality in your Spring Boot application, you can use various tools and techniques, among which:
+- **Static Code Analysis**: Use static code analysis tools to analyze your code for potential issues, such as code smells, security vulnerabilities, and performance problems. Tools like SonarQube, Checkstyle, PMD, and FindBugs can help identify these issues and provide recommendations for improvement.
+- **Code Formatting**: Use code formatting tools to ensure consistent code style across your project. Tools like Prettier, Spotless, and Checkstyle can help enforce coding standards and automatically format your code.
+- **Linting**: Use linting tools to identify and fix potential issues in your code. Linting tools can help catch common mistakes, such as unused variables, incorrect imports, and inconsistent naming conventions.
+- **Unit Testing**: Write unit tests for your code to ensure that it behaves as expected. Unit tests help catch bugs early in the development process and provide documentation for your code.
+- **Integration Testing**: Write integration tests to ensure that different components of your application work together as expected. Integration tests help catch issues that may arise from interactions between components.
+
+We already covered the latter two points, so let's focus on the first three.
+
+#### Static Code Analysis with SonarQube
+SonarQube is an open-source platform for continuous inspection of code quality. It provides static code analysis, code coverage, and code quality metrics. SonarQube can be integrated into your build process to automatically analyze your code and provide feedback on code quality.
+To use SonarQube in your Spring Boot application, you need to add the SonarQube plugin to your build tool (e.g., Maven or Gradle) and configure it in your `pom.xml` or `build.gradle` file.
+For Maven, you can add the following plugin to your `pom.xml` file:
+```xml
+<plugin>
+    <groupId>org.sonarsource.scanner.maven</groupId>
+    <artifactId>sonar-maven-plugin</artifactId>
+    <version>4.0.0.2929</version>
+</plugin>
+```
+For Gradle, you can add the following plugin to your `build.gradle` file:
+```groovy
+plugins {
+    id "org.sonarqube" version "4.0.0.2929"
+}
+```
+Of course, you need to install [SonarQube](https://www.sonarsource.com/products/sonarqube/downloads/) and run it locally or on a server. You can download SonarQube from the official website and follow the installation instructions. Once SonarQube is running, you can access the web interface at `http://localhost:9000` (or the configured URL) to view the analysis results.
+
+Then, you can run the SonarQube analysis using the following command:
+```bash
+mvn sonar:sonar
+```
+or
+```bash
+./gradlew sonar
+```
+
+This will analyze your code and send the results to the SonarQube server. You can then view the analysis results in the SonarQube web interface.
+
+#### Code Formatting with Checkstyle
+
+Checkstyle is a static code analysis tool that helps enforce coding standards and best practices in Java code. It checks your code against a set of predefined rules and provides feedback on code style, formatting, and potential issues.
+To use Checkstyle in your Spring Boot application, you need to add the Checkstyle plugin to your build tool (e.g., Maven or Gradle) and configure it in your `pom.xml` or `build.gradle` file.
+For Maven, you can add the following plugin to your `pom.xml` file:
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-checkstyle-plugin</artifactId>
+    <version>3.1.2</version>
+    <configuration>
+        <configLocation>checkstyle.xml</configLocation>
+        <failOnViolation>true</failOnViolation>
+    </configuration>
+    <executions>
+        <execution>
+            <goals>
+                <goal>check</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+```
+For Gradle, you can add the following plugin to your `build.gradle` file:
+```groovy
+plugins {
+    id "checkstyle"
+}
+
+checkstyle {
+  toolVersion = '10.21.4'
+  configFile = file("${rootDir}/checkstyle.xml")
+  ignoreFailures = false
+  showViolations = true
+}
+
+checkstyleMain {
+  reports {
+    xml.required = true
+    html.required = false
+  }
+}
+```
+
+You can create a `checkstyle.xml` file in the root of your project or in a separate directory (e.g., `config/checkstyle`) to define the Checkstyle rules you want to enforce. You can use the default Checkstyle configuration or customize it according to your project's coding standards. You can use the [Google Java Style Guide](https://checkstyle.sourceforge.io/).
+To run Checkstyle, you can use the following command:
+```bash
+mvn checkstyle:check
+```
+or
+```bash
+./gradlew checkstyleMain
+```
+
+This will analyze your code and report any violations against the defined Checkstyle rules. You can view the results in the console output or in the generated reports.
+
+Other tools for static code analysis include PMD, FindBugs, and SpotBugs. These tools can be used in a similar way to Checkstyle to analyze your code for potential issues and provide feedback on code quality.
+- **PMD**: A static code analysis tool that checks Java code for potential issues, such as unused variables, empty catch blocks, and unnecessary object creation. PMD provides a set of predefined rules and allows you to create custom rules.
+- **FindBugs**: A static code analysis tool that detects potential bugs in Java code. FindBugs analyzes bytecode to identify common programming mistakes, such as null pointer dereferences, infinite recursive loops, and thread synchronization issues.
+- **SpotBugs**: A fork of FindBugs that provides additional features and improvements. SpotBugs is actively maintained and supports the latest Java versions. It can be used as a standalone tool or integrated into your build process.
+- **SonarLint**: A static code analysis tool that provides real-time feedback on code quality in your IDE. SonarLint integrates with popular IDEs like IntelliJ IDEA, Eclipse, and Visual Studio Code. It helps you identify and fix code quality issues as you write code, ensuring that your code adheres to coding standards and best practices.
+- **Spotless**: A code formatting tool that integrates with various build tools (e.g., Maven, Gradle) and IDEs. Spotless can automatically format your code according to predefined rules and coding standards. It supports multiple languages, including Java, Kotlin, and Groovy.
+- **Prettier**: A code formatter that supports multiple languages and integrates with various IDEs and build tools. Prettier automatically formats your code according to a set of rules, ensuring consistent code style across your project. It is particularly popular in the JavaScript and TypeScript communities but can also be used for Java projects.
+
+### 

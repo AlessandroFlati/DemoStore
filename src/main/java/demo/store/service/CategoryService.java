@@ -6,14 +6,9 @@ import demo.store.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class CategoryService {
-    private final Map<Long, Category> categories = Map.of(
-        1L, new Category(1L, "Fruits"),
-        2L, new Category(2L, "Vegetables")
-    );
 
     private final CategoryRepository categoryRepository;
 
